@@ -1,39 +1,71 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/useColorScheme';
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+import { AuthProvider } from "@/context/AuthContext";
+import { AppContext } from "@/theme/AppContext";
+import { SplashScreen, Stack } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
+import { Platform } from "react-native";
+import { PaperProvider } from "react-native-paper";
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+  const [isDarkTheme, setIsDarkTheme] = useState(false);
+
+  const appContext = useMemo(() => {
+    return { isDarkTheme, setIsDarkTheme };
+  }, []);
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
-  }
+    if (Platform.OS === "android") SplashScreen.hide();
+  }, []);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <AuthProvider>
+      <PaperProvider>
+        <AppContext.Provider value={appContext}>
+          <Stack
+            screenOptions={
+              {
+                // headerRight: () => (
+                //   <Appbar.Action icon="refresh" onPress={handleRefresh} />
+                // ),
+              }
+            }
+          >
+            <Stack.Screen
+              name="index"
+              options={{
+                headerShown: true,
+                title: "Page d'accuel",
+              }}
+            />
+
+            <Stack.Screen
+              name="register"
+              options={{
+                headerShown: true,
+                title: "Inscription",
+              }}
+            />
+            <Stack.Screen
+              name="login"
+              options={{
+                headerShown: true,
+                title: "Connexion",
+              }}
+            />
+            <Stack.Screen
+              name="auth"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="(tabs)"
+              options={{
+                headerShown: false,
+              }}
+            />
+          </Stack>
+        </AppContext.Provider>
+      </PaperProvider>
+    </AuthProvider>
   );
 }
