@@ -4,6 +4,7 @@ const IMAGES = {
   TRACK: require("./track.png"),
   FACEBOOK: require("./facebook.png"),
   GOOGLE: require("./google.png"),
+  GITHUB: require("./github.png"),
   APPLE: require("./apple.png"),
   HOME: require("./home.png"),
   ORDERS: require("./orders.png"),

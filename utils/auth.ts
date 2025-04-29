@@ -21,7 +21,8 @@ const parseFragmentParams = (url: string) => {
 
 // Fonction générique pour se connecter avec un fournisseur OAuth
 export const signInWithProvider = async (
-  provider: "google" | "facebook" | "github"
+  provider: "google" | "facebook" | "github" ,
+  userId? : number | null
 ): Promise<{ token: string; user: any }> => {
   try {
     // Créer l'URI de redirection pour l'authentification
@@ -47,12 +48,12 @@ export const signInWithProvider = async (
 
     // Ouvrir le navigateur pour l'authentification
     const result = await WebBrowser.openAuthSessionAsync(data.url!, redirectUri);
-    console.log("WebBrowser result:", result);
+    // console.log("WebBrowser result:", result);
 
     // Gérer le résultat de l'authentification
     if (result.type === "success") {
       const params = parseFragmentParams(result.url);
-      console.log("Fragment params:", params);
+      // console.log("Fragment params:", params);
 
       if (params.access_token && params.refresh_token) {
         // Définir la session avec les tokens reçus
@@ -68,7 +69,7 @@ export const signInWithProvider = async (
 
         // Récupérer les informations de l'utilisateur
         const { user } = sessionData.session!;
-        console.log("User data:", user);
+        console.log("User data:", user );
 
         // Vérifier que provider_id existe
         if (!user.user_metadata.provider_id) {
@@ -84,9 +85,10 @@ export const signInWithProvider = async (
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              provider: user.app_metadata.provider || provider,
+              provider: provider || user.app_metadata.provider,
               provider_id: user.user_metadata.provider_id,
               device: "mobile",
+              userId : userId
             }),
           }
         );
@@ -96,7 +98,7 @@ export const signInWithProvider = async (
           console.error("Erreur backend:", errorData);
           throw new Error(
             errorData.message ||
-              "Erreur lors de la synchronisation avec le backend"
+              "Authentification echouée"
           );
         }
 

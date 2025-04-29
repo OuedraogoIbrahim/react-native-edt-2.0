@@ -89,7 +89,8 @@ const LoginScreen = () => {
 
       navigation.replace("/dashboard");
     } catch (error) {
-      console.error(`Erreur dans handleOAuthSignIn (${provider}):`, error);
+      navigation.navigate("/login");
+      // console.error(`Erreur lors de l'authentification (${provider}):`, error);
     }
   };
 
@@ -106,7 +107,7 @@ const LoginScreen = () => {
             color: colors.text,
           }}
         >
-          Hello Again!
+          Bienvenue !
         </Text>
         <Text
           style={{
@@ -118,7 +119,7 @@ const LoginScreen = () => {
             color: colors.text,
           }}
         >
-          Welcome back you've been missed!
+          Nous sommes ravis de vous revoir parmi nous.
         </Text>
         <Formik
           initialValues={{ email: "", password: "" }}
@@ -300,6 +301,7 @@ const LoginScreen = () => {
           >
             <Image source={IMAGES.GOOGLE} style={{ height: 40, width: 40 }} />
           </TouchableOpacity>
+
           <TouchableOpacity
             style={{
               height: 70,
@@ -309,11 +311,15 @@ const LoginScreen = () => {
               borderColor: COLORS.WHITE,
               justifyContent: "center",
               alignItems: "center",
+            }}
+            onPress={() => {
+              handleOAuthSignIn("github");
             }}
             // Pas de onPress pour Apple (non implémenté)
           >
-            <Image source={IMAGES.APPLE} style={{ height: 40, width: 40 }} />
+            <Image source={IMAGES.GITHUB} style={{ height: 40, width: 40 }} />
           </TouchableOpacity>
+
           <TouchableOpacity
             style={{
               height: 70,
@@ -324,7 +330,10 @@ const LoginScreen = () => {
               justifyContent: "center",
               alignItems: "center",
             }}
-            onPress={() => handleOAuthSignIn("facebook")}
+            onPress={() => {
+              // handleOAuthSignIn("facebook");
+              alert("Pas encore implemente");
+            }}
           >
             <Image source={IMAGES.FACEBOOK} style={{ height: 40, width: 40 }} />
           </TouchableOpacity>

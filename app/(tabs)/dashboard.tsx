@@ -331,10 +331,6 @@ export default function Dashboard() {
             ))
           )}
         </View>
-
-        <TouchableOpacity onPress={() => nav.push("/test")}>
-          <Text>Test</Text>
-        </TouchableOpacity>
       </View>
 
       <NotificationsModal

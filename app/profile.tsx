@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -7,9 +7,14 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Modal,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { Feather as Icon } from "@expo/vector-icons";
 import { AuthContext } from "@/context/AuthContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { signInWithProvider } from "@/utils/auth";
+import { useRouter } from "expo-router";
 
 // Typage pour les données
 interface Matiere {
@@ -50,14 +55,20 @@ interface User {
   email: string;
   provider?: string;
   personne: Personne;
+  id?: number;
 }
 
 interface AuthContextType {
   user: User | null; // Allow null to handle unauthenticated state
+  setUser: (user: User | null) => void;
+  setToken: (token: string | null) => void;
+  setIsConnected: (isConnected: boolean) => void;
 }
 
 export default function ProfileScreen() {
   const authContext = useContext(AuthContext);
+  const navigation = useRouter();
+  const [isSocialModalVisible, setSocialModalVisible] = useState(false);
 
   // Handle case where context is undefined
   if (!authContext) {
@@ -70,8 +81,7 @@ export default function ProfileScreen() {
     );
   }
 
-  const { user } = authContext;
-  console.log(user);
+  const { user, setUser, setToken, setIsConnected } = authContext;
 
   // Handle case where user is null or undefined
   if (!user) {
@@ -97,6 +107,51 @@ export default function ProfileScreen() {
   const providerText = hasProvider
     ? `Connecté via ${provider.charAt(0).toUpperCase() + provider.slice(1)}`
     : "Aucun réseau social connecté";
+
+  // List of social media providers with their logos
+  const socialProviders = [
+    {
+      name: "google",
+      image: "https://img.icons8.com/color/64/google-logo.png",
+    },
+    {
+      name: "facebook",
+      image: "https://img.icons8.com/color/64/facebook-new.png",
+    },
+    {
+      name: "github",
+      image: "https://img.icons8.com/ios-filled/64/github.png",
+    },
+  ];
+
+  // Filter providers to exclude the currently linked provider in change mode
+  const filteredProviders = hasProvider
+    ? socialProviders.filter(
+        (p) => p.name.toLowerCase() !== provider?.toLowerCase()
+      )
+    : socialProviders;
+
+  const handleOAuthSignIn = async (
+    provider: "google" | "facebook" | "github",
+    userId: number
+  ) => {
+    setSocialModalVisible(false);
+    try {
+      const { token, user } = await signInWithProvider(provider, userId);
+
+      await AsyncStorage.setItem("token", token);
+      await AsyncStorage.setItem("user", JSON.stringify(user));
+
+      setToken(token);
+      setUser(user);
+      setIsConnected(true);
+    } catch (error) {
+      alert("Une erreur est survenue.");
+      // console.error(`Erreur lors de l'authentification (${provider}):`, error);
+    } finally {
+      navigation.navigate("/profile");
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -215,13 +270,7 @@ export default function ProfileScreen() {
             </View>
             <TouchableOpacity
               style={styles.socialButton}
-              onPress={() => {
-                console.log(
-                  hasProvider
-                    ? "Changer le provider"
-                    : "Connecter un réseau social"
-                );
-              }}
+              onPress={() => setSocialModalVisible(true)}
             >
               <Text style={styles.socialButtonText}>
                 {hasProvider
@@ -232,6 +281,54 @@ export default function ProfileScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Social Media Modal */}
+      <Modal
+        visible={isSocialModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSocialModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setSocialModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Choisir un réseau social</Text>
+              {filteredProviders.length > 0 ? (
+                filteredProviders.map((provider, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.socialProviderItem}
+                    onPress={() => {
+                      handleOAuthSignIn(
+                        provider.name as "google" | "facebook" | "github",
+                        user.id || 0
+                      );
+                    }}
+                  >
+                    <Image
+                      source={{ uri: provider.image }}
+                      style={styles.socialProviderImage}
+                    />
+                    <Text style={styles.socialProviderText}>
+                      Connexion avec {provider.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.noProvidersText}>
+                  Aucun autre réseau social disponible
+                </Text>
+              )}
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setSocialModalVisible(false)}
+              >
+                <Text style={styles.modalCloseButtonText}>Annuler</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 }
@@ -405,5 +502,63 @@ const styles = StyleSheet.create({
     color: "#e74c3c",
     textAlign: "center",
     paddingHorizontal: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 20,
+    width: "80%",
+    maxWidth: 400,
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 16,
+  },
+  socialProviderItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    width: "100%",
+    borderRadius: 8,
+    backgroundColor: "#f8f9fa",
+    marginBottom: 8,
+  },
+  socialProviderImage: {
+    width: 32,
+    height: 32,
+    marginRight: 12,
+  },
+  socialProviderText: {
+    fontSize: 16,
+    color: "#333",
+    fontWeight: "500",
+  },
+  modalCloseButton: {
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: "#e74c3c",
+    borderRadius: 8,
+  },
+  modalCloseButtonText: {
+    fontSize: 16,
+    color: "#fff",
+    fontWeight: "600",
+  },
+  noProvidersText: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    paddingVertical: 12,
   },
 });
