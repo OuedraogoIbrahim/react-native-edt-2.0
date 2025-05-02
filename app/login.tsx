@@ -204,7 +204,7 @@ const LoginScreen = () => {
                   {errors.password}
                 </Text>
               )}
-              <Text
+              {/* <Text
                 style={{
                   fontFamily: FONTS.MONTSERRAT,
                   textAlign: "right",
@@ -213,7 +213,7 @@ const LoginScreen = () => {
                 }}
               >
                 Mot de passe oublié?
-              </Text>
+              </Text> */}
               <TouchableOpacity
                 style={{
                   height: 50,
@@ -320,7 +320,7 @@ const LoginScreen = () => {
             <Image source={IMAGES.GITHUB} style={{ height: 40, width: 40 }} />
           </TouchableOpacity>
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={{
               height: 70,
               width: 100,
@@ -336,7 +336,7 @@ const LoginScreen = () => {
             }}
           >
             <Image source={IMAGES.FACEBOOK} style={{ height: 40, width: 40 }} />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
         <View style={{ flexDirection: "row", justifyContent: "center" }}>
           <Text

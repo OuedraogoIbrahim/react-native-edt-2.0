@@ -78,7 +78,7 @@ export const signInWithProvider = async (
 
         // Envoyer les données au backend Laravel
         const response = await fetch(
-          "http://192.168.11.113:8000/api/auth/provider",
+          "http://192.168.137.194:8000/api/auth/provider",
           {
             method: "POST",
             headers: {

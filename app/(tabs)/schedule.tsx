@@ -14,6 +14,8 @@ import { SkeletonPage } from "@/component/common/skeletonPage";
 import EmptyElement from "@/component/common/EmptyElement";
 import { CourseFilter } from "@/component/common/CourseFilter";
 import { AuthContext } from "@/context/AuthContext";
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
 
 const WEEKDAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
@@ -337,6 +339,123 @@ export default function CalendarScreen() {
     return "";
   };
 
+  const generatePDF = async () => {
+    try {
+      const htmlContent = `
+        <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 20px; }
+              h1 { text-align: center; color: #333; }
+              h2 { text-align: center; color: #555; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th, td { border: 1px solid #E0E0E0; padding: 10px; text-align: center; }
+              th { background-color: #F0F0F0; font-weight: bold; }
+              .time-column { width: 80px; background-color: #F9FAFB; }
+              .time-text { font-size: 12px; color: #666; }
+              .module-text { font-size: 14px; font-weight: bold; color: #333; }
+              .room-text { font-size: 12px; color: #999; }
+            </style>
+          </head>
+          <body>
+            <h1>${getSectionText()}</h1>
+            <h2>Semaine du ${
+              weekDays[0].split(". ")[1]
+            } ${selectedDate.toLocaleString("fr-FR", {
+        month: "long",
+        year: "numeric",
+      })} au ${weekDays[5].split(". ")[1]} ${
+        weekDays[5].split(". ")[0] === "Sam"
+          ? selectedDate.toLocaleString("fr-FR", {
+              month: "long",
+              year: "numeric",
+            })
+          : new Date(
+              selectedDate.getFullYear(),
+              selectedDate.getMonth() + 1,
+              1
+            ).toLocaleString("fr-FR", { month: "long", year: "numeric" })
+      }</h2>
+            <table>
+              <tr>
+                <th class="time-column"></th>
+                ${WEEKDAYS.slice(0, 6)
+                  .map(
+                    (day, index) => `
+                      <th>
+                        ${day}<br />
+                        <span style="font-size: 12px; color: #666;">${
+                          weekDays[index].split(". ")[1]
+                        }</span>
+                      </th>
+                    `
+                  )
+                  .join("")}
+              </tr>
+              <tr>
+                <td class="time-column"><span class="time-text">Matin</span></td>
+                ${scheduleData.morning
+                  .map(
+                    (slot) => `
+                      <td>
+                        <span class="time-text">${
+                          slot.heure_debut && slot.heure_fin
+                            ? `${formatHour(slot.heure_debut)} - ${formatHour(
+                                slot.heure_fin
+                              )}`
+                            : ""
+                        }</span><br />
+                        <span class="module-text">${
+                          slot.matiere.nom
+                        }</span><br />
+                        <span class="room-text">${slot.salle.nom}</span>
+                      </td>
+                    `
+                  )
+                  .join("")}
+              </tr>
+              <tr>
+                <td class="time-column"><span class="time-text">Soir</span></td>
+                ${scheduleData.afternoon
+                  .map(
+                    (slot) => `
+                      <td>
+                        <span class="time-text">${
+                          slot.heure_debut && slot.heure_fin
+                            ? `${formatHour(slot.heure_debut)} - ${formatHour(
+                                slot.heure_fin
+                              )}`
+                            : ""
+                        }</span><br />
+                        <span class="module-text">${
+                          slot.matiere.nom
+                        }</span><br />
+                        <span class="room-text">${slot.salle.nom}</span>
+                      </td>
+                    `
+                  )
+                  .join("")}
+              </tr>
+            </table>
+          </body>
+        </html>
+      `;
+
+      const { uri } = await Print.printToFileAsync({
+        html: htmlContent,
+        base64: false,
+      });
+
+      await Sharing.shareAsync(uri, {
+        mimeType: "application/pdf",
+        dialogTitle: "Enregistrer ou partager l'emploi du temps",
+      });
+    } catch (error) {
+      console.error("Erreur lors de la génération du PDF:", error);
+      alert("Une erreur est survenue lors de la génération du PDF.");
+    }
+  };
+
   if (!user) {
     return (
       <View style={styles.errorContainer}>
@@ -441,27 +560,32 @@ export default function CalendarScreen() {
 
       <View style={styles.scheduleTableContainer}>
         <Text style={styles.sectionText}>{getSectionText()}</Text>
-        <Text style={styles.scheduleTableTitle}>
-          Semaine du {weekDays[0].split(". ")[1]}{" "}
-          {selectedDate.toLocaleString("fr-FR", {
-            month: "long",
-            year: "numeric",
-          })}{" "}
-          au {weekDays[5].split(". ")[1]}{" "}
-          {weekDays[5].split(". ")[0] === "Sam"
-            ? selectedDate.toLocaleString("fr-FR", {
-                month: "long",
-                year: "numeric",
-              })
-            : new Date(
-                selectedDate.getFullYear(),
-                selectedDate.getMonth() + 1,
-                1
-              ).toLocaleString("fr-FR", {
-                month: "long",
-                year: "numeric",
-              })}
-        </Text>
+        <View style={styles.scheduleHeader}>
+          <Text style={styles.scheduleTableTitle}>
+            Semaine du {weekDays[0].split(". ")[1]}{" "}
+            {selectedDate.toLocaleString("fr-FR", {
+              month: "long",
+              year: "numeric",
+            })}{" "}
+            au {weekDays[5].split(". ")[1]}{" "}
+            {weekDays[5].split(". ")[0] === "Sam"
+              ? selectedDate.toLocaleString("fr-FR", {
+                  month: "long",
+                  year: "numeric",
+                })
+              : new Date(
+                  selectedDate.getFullYear(),
+                  selectedDate.getMonth() + 1,
+                  1
+                ).toLocaleString("fr-FR", {
+                  month: "long",
+                  year: "numeric",
+                })}
+          </Text>
+          <TouchableOpacity onPress={generatePDF} style={styles.downloadButton}>
+            <Ionicons name="download-outline" size={24} color="#333" />
+          </TouchableOpacity>
+        </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={true}>
           <View style={styles.table}>
             <View style={styles.tableRow}>
@@ -614,6 +738,12 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  scheduleHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
   sectionText: {
     fontSize: 18,
     fontWeight: "700",
@@ -625,8 +755,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#333",
-    marginBottom: 10,
+    flex: 1,
     textAlign: "center",
+  },
+  downloadButton: {
+    padding: 8,
   },
   table: {
     borderWidth: 1,
